@@ -1,0 +1,37 @@
+version: '3.8'
+
+networks:
+  dockerland:
+    name: dockerland
+
+services:
+  proxy:
+    image: jrcs/letsencrypt-nginx-proxy-companion:latest
+    container_name: proxy-companion
+    depends_on:
+      - proxy-nginx
+    networks:
+      - dockerland
+    volumes:
+      - ./proxy-gateway/certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    volumes_from:
+      - proxy-nginx
+
+  proxy-nginx:
+    image: jwilder/nginx-proxy:latest
+    container_name: proxy-gateway
+    networks:
+      - dockerland
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./proxy-gateway/nginx-proxy-maxbodysize.conf:/etc/nginx/conf.d/maxbodysize.conf
+      - ./proxy-gateway/certs:/etc/nginx/certs:ro
+      - ./proxy-gateway/vhosts:/etc/nginx/vhost.d
+      - ./proxy-gateway/html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+
